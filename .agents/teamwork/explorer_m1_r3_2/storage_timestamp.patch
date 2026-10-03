@@ -1,0 +1,11 @@
+--- a/src/storage.py
++++ b/src/storage.py
+@@ -111,7 +111,7 @@ class AtomicJsonStore:
+                 raise json.JSONDecodeError("JSON root must be an object", "", 0)
+         except (json.JSONDecodeError, OSError, UnicodeDecodeError) as exc:
+             logger.error("Failed to parse %s (%s). Creating backup and re-initializing.", self.file_path, exc)
+-            backup_path = f"{self.file_path}.corrupt.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
++            backup_path = f"{self.file_path}.corrupt.{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+             try:
+                 os.replace(self.file_path, backup_path)
+             except OSError:

@@ -1,0 +1,11 @@
+--- tests/test_fuzz_storage_config.py
++++ tests/test_fuzz_storage_config.py
+@@ -78,6 +78,7 @@
+         self,
+         tmp_path: Path,
+         temp_config_yaml_file: Path,
+         valid_env_dict: dict,
++        clean_env: None,
+     ):
+         env_file = tmp_path / ".env"
+         # Test null byte in .env file

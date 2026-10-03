@@ -1,0 +1,84 @@
+# =================================================================
+# Autonomous Telegram Personal Accountability Coach
+# Operational Configuration (config.yaml)
+# =================================================================
+
+app:
+  timezone: "Asia/Ho_Chi_Minh"
+  history_limit: 10
+  data_dir: "data"
+  records_file: "data/records.json"
+
+limits:
+  max_snoozes: 2
+  snooze_duration_minutes: 15
+  micro_habit_duration_minutes: 2
+
+schedules:
+  gym:
+    name: "Gym Session"
+    cron_days_split1: "mon,tue,thu"
+    time_split1: "17:15"
+    window_split1: "17:30 – 18:30"
+    cron_days_split2: "wed,sat"
+    time_split2: "16:15"
+    window_split2: "16:30 – 17:30"
+    duration_minutes: 60
+    message_template: "🏋️‍♂️ *GIỜ TẬP GYM ĐÃ ĐẾN!*\nKhung giờ tập: `{window}`\nChuẩn bị đồ tập, nạp năng lượng và rời bàn làm việc ngay nào!"
+
+  toeic:
+    name: "TOEIC Study Session"
+    time: "19:25"
+    window: "19:30 – 20:30"
+    duration_minutes: 60
+    message_template: "📚 *GIỜ HỌC TOEIC!*\nChủ đề hôm nay: *{topic}*\nKhung giờ học: `{window}`\nBật Pomodoro 25/5 và tập trung cao độ, không lướt mạng xã hội!"
+    syllabus_rotation:
+      - "Part 1 - Photographs (Mô tả hình ảnh)"
+      - "Part 2 - Question-Response (Hỏi & Đáp)"
+      - "Part 3 - Short Conversations (Đối thoại ngắn)"
+      - "Part 4 - Short Talks (Bài nói ngắn)"
+      - "Part 5 - Incomplete Sentences (Ngữ pháp & Từ vựng)"
+      - "Part 6 - Text Completion (Điền đoạn văn)"
+      - "Part 7 - Reading Comprehension & Full Mock Review"
+
+  major:
+    name: "Major Subject Study & Game Dev"
+    time: "20:40"
+    window: "20:45 – 21:45"
+    duration_minutes: 60
+    message_template: "💻 *GIỜ CÀY CHUYÊN NGÀNH & GAME DEV!*\nKhung giờ: `{window}`\nĐào sâu kiến trúc game engine, tối ưu thuật toán và commit code chất lượng!"
+
+ai_coach:
+  model: "gemini-2.5-flash"
+  temperature: 0.7
+  max_output_tokens: 256
+  system_prompt: >
+    Bạn là Huấn Luyện Viên Kỷ Luật Cá Nhân (AI Accountability Coach) dành riêng cho một sinh viên IT kiêm lập trình viên game.
+    Phong cách: Trực tiếp, súc tích, mang tư duy kỹ thuật/thực tế, hơi mỉa mai và châm biếm sắc sảo trước sự trì hoãn/lý do bao biện, nhưng nhiệt tình ghi nhận và tôn trọng kỷ luật hành động thực chất.
+    QUY TẮC BẮT BUỘC: Mỗi câu trả lời KHÔNG ĐƯỢC QUÁ 2-3 câu ngắn gọn. Không dài dòng, không nói đạo lý sáo rỗng. Luôn thúc đẩy hành động ngay lập tức.
+
+  prompts:
+    completion_praise: >
+      Người dùng vừa hoàn thành phiên {session_name} ({detail}). Streak hiện tại: {streak} ngày liên tiếp.
+      Hãy gửi một câu khen ngợi ngắn gọn (tối đa 2 câu), ghi nhận tính kỷ luật thực chiến của một kỹ sư.
+    snooze_warning_1: >
+      Người dùng vừa xin lùi 15 phút lần thứ 1 cho phiên {session_name}.
+      Hãy cảnh báo ngắn gọn (tối đa 2 câu) theo phong cách mỉa mai nhẹ về việc trì hoãn, nhắc nhở họ chỉ còn đúng 1 lần lùi nữa.
+    snooze_warning_2: >
+      Người dùng đã lùi 15 phút lần thứ 2 (ĐÃ ĐẠT GIỚI HẠN TỐI ĐA) cho phiên {session_name}.
+      Hãy ra lệnh dứt khoát, gay gắt (tối đa 2 câu): Hết giờ dây dưa, dẹp điện thoại và bắt tay vào việc ngay lập tức!
+    skip_evaluator: >
+      Người dùng muốn bỏ phiên {session_name} ({detail}) với lý do: "{reason}".
+      Nhiệm vụ:
+      1. Đánh giá xem đây là lý do bất khả kháng chính đáng (bệnh tật, cấp cứu, sự cố khẩn cấp) hay chỉ là lý do bao biện/lười biếng/trì hoãn.
+      2. Nếu là BAO BIỆN: Bóc trần lý do bằng 1 câu châm biếm sắc bén, và ép thực hiện 'micro-habit 2 phút' (ví dụ: mở sách đọc 2 phút hoặc làm 5 cái chống đẩy) để không đứt chuỗi. Bắt đầu bằng [EXCUSE].
+      3. Nếu là CHÍNH ĐÁNG: Đồng ý cho nghỉ ngơi phục hồi, yêu cầu ngày mai quay lại với 200% năng lượng. Bắt đầu bằng [LEGITIMATE].
+      Quy tắc: Tối đa 2-3 câu ngắn gọn.
+
+  fallbacks:
+    offline_praise: "✅ Đã ghi nhận hoàn thành! Kỷ luật tạo nên bản lĩnh. Tiếp tục giữ vững chuỗi streak nhé!"
+    offline_snooze_1: "⏳ Đã lùi 15 phút (Lần 1/2). Bạn còn đúng một cơ hội lùi giờ nữa. Đừng để sự trì hoãn chiến thắng!"
+    offline_snooze_2: "⚠️ ĐÃ ĐẠT GIỚI HẠN LÙI GIỜ (Lần 2/2)! Nghiêm túc dẹp điện thoại và bắt tay vào việc ngay!"
+    offline_skip_excuse: "🛑 Lý do chưa thuyết phục! Hãy làm ngay micro-habit 2 phút: mở tài liệu hoặc hít đất 5 cái trước khi nghỉ!"
+    offline_skip_legitimate: "🛑 Đã ghi nhận nghỉ có lý do chính đáng. Nghỉ ngơi phục hồi và ngày mai quay lại với 200% kỷ luật!"
+    offline_error: "🤖 AI Coach tạm thời mất kết nối mạng, nhưng kỷ luật của bạn thì không được ngắt quãng. Bắt tay vào việc ngay đi!"

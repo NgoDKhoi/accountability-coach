@@ -1,0 +1,26 @@
+# =================================================================
+# Autonomous Telegram Personal Accountability Coach - Requirements
+# Python 3.12+ (Compatible with Python 3.14)
+# =================================================================
+
+# Telegram Bot Framework (Async, v20+)
+python-telegram-bot>=20.8,<22.0
+
+# Asynchronous Job Scheduler
+APScheduler>=3.10.4,<4.0.0
+
+# Google Gemini AI SDK (gemini-2.5-flash)
+google-genai>=1.0.0
+
+# YAML Configuration Parser
+PyYAML>=6.0.1
+
+# Environment Variable Loader
+python-dotenv>=1.0.1
+
+# IANA Timezone Database (Essential for Windows ZoneInfo)
+tzdata>=2024.1
+
+# Test Suite & Async Test Runner
+pytest>=8.0.0
+pytest-asyncio>=0.23.5
