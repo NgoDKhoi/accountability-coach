@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "streak": {
+    "current_streak": 0,
+    "best_streak": 0,
+    "last_completed_date": null,
+    "total_completions": 0
+  },
+  "sessions": {},
+  "active_sessions": {},
+  "awaiting_reason": null,
+  "history": []
+}

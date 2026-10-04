@@ -294,6 +294,10 @@ class MockGeminiClient:
         self.api_key = api_key
         self.aio = MockGeminiAsyncClient(error_mode=error_mode)
 
+    @property
+    def models(self) -> MockGeminiModels:
+        return self.aio.models
+
 
 # =====================================================================
 # 3. Contract Service Implementations (AICoachService, SchedulerService, BotApp)
@@ -642,9 +646,10 @@ class DefaultBotApplication:
             timestamp_str = datetime.now(ZoneInfo(self.config.timezone)).isoformat()
             await self.storage.record_skip(session_id, reason_text, classification, timestamp_str)
 
-            data_dict["awaiting_reason"] = None
+            fresh_data = await self.storage.load_data()
+            fresh_data["awaiting_reason"] = None
             self.active_session_awaiting_reason = None
-            await self.storage.save_data(data_dict)
+            await self.storage.save_data(fresh_data)
 
             if classification == "LEGITIMATE":
                 reply = (

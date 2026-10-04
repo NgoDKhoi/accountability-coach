@@ -60,7 +60,7 @@ An asynchronous Telegram bot application for an IT student and game developer, i
 | E2E | E2E Testing Track | Design 4-tier opaque-box test suite (`TEST_INFRA.md`, Tiers 1-4, test runner) -> `TEST_READY.md` | none | DONE |
 | M1 | Config, Data Models & Atomic Persistence | `.env.example`, `config.yaml`, `src/config.py`, `src/storage.py`, data models, atomic writes, streak calculation, unit tests | none | DONE |
 | M2 | Gemini AI Accountability Coach | `src/coach.py`, `google-genai` client (`gemini-2.5-flash`), coach persona, sliding window, excuse evaluator, fallbacks, unit tests | M1 | DONE |
-| M3 | Proactive Scheduler | `src/scheduler.py`, `APScheduler` in `Asia/Ho_Chi_Minh`, Gym triggers, TOEIC 7-day rotation, Major subject trigger, 15m snooze jobs, unit tests | M1 | IN_PROGRESS |
+| M3 | Proactive Scheduler | `src/scheduler.py`, `APScheduler` in `Asia/Ho_Chi_Minh`, Gym triggers, TOEIC 7-day rotation, Major subject trigger, 15m snooze jobs, unit tests | M1 | DONE |
 | M4 | Telegram Bot Core & Interactive Inline Flow | `src/bot.py`, `src/main.py`, whitelist security guard, command handlers, inline action state machine, micro-habit challenge routing, unit tests | M1, M2, M3 | PLANNED |
 | M5 | Deployment Packaging & Scripts | `Dockerfile`, `docker-compose.yml`, `start.sh`, `start.bat`, `requirements.txt`, `README.md` | M1, M2, M3, M4 | PLANNED |
 | M6 | Final Integration & E2E Verification | Phase 1: Pass 100% E2E test suite (Tiers 1-4). Phase 2: Tier 5 Adversarial Coverage Hardening | E2E, M1-M5 | PLANNED |

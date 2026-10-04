@@ -55,3 +55,31 @@ Gate Result: **PASS** (All 181 tests passing deterministically across unified te
 Gate Result: **PASS** (All 153 M2 unit, adversarial, stress, and regression tests passing cleanly offline; sliding deque pruning, leading model turn prevention, excuse micro-habit routing, and timeout fallbacks verified).
 
 
+
+---
+
+## Milestone M3: Proactive Scheduler Service — Iteration 1
+| Agent | Role | Verdict | Source |
+|---|---|---|---|
+| worker_m3_1 | teamwork_preview_worker | DONE (34 unit tests passed, 8 Group 2 tests passed) | handoff.md |
+| reviewer_m3_1 | teamwork_preview_reviewer | APPROVE (34 unit passed, 8 Group 2 passed, 143 M1-M3 regression passed) | handoff.md |
+| reviewer_m3_2 | teamwork_preview_reviewer | APPROVE (34 unit passed, 8 Group 2 passed, 40 Tier 1 passed) | handoff.md |
+| challenger_m3_1 | teamwork_preview_challenger | APPROVE (16 adversarial stress tests in test_scheduler_adversarial.py passed 100%) | handoff.md |
+| challenger_m3_2 | teamwork_preview_challenger | APPROVE (16 adversarial stress tests in test_m3_adversarial.py passed 100%) | handoff.md |
+| auditor_m3_1 | teamwork_preview_auditor | CLEAN (0 facades, 0 hardcoded values, 0 skips, authentic APScheduler implementation) | handoff.md |
+
+Gate Result: **PASS** (Strict timezone configuration Asia/Ho_Chi_Minh, Gym split triggers, daily TOEIC & Major triggers, dynamic DateTrigger snoozes, dual-layer dictionary hooks, and resilient lifecycle handling verified).
+
+---
+
+## Milestone M4: Telegram Bot Core & Interactive Inline Actions — Iteration 1
+| Agent | Role | Verdict | Source |
+|---|---|---|---|
+| worker_m4_1 | teamwork_preview_worker | DONE (26 unit tests passed) | handoff.md |
+| reviewer_m4_1 | teamwork_preview_reviewer | REQUEST_CHANGES (INTEGRITY VIOLATION) | handoff.md |
+| reviewer_m4_2 | teamwork_preview_reviewer | REQUEST_CHANGES (INTEGRITY VIOLATION) | handoff.md |
+| challenger_m4_1 | teamwork_preview_challenger | APPROVE (idempotency, snooze limits, adversarial IDs verified) | handoff.md |
+| challenger_m4_2 | teamwork_preview_challenger | APPROVE (17 adversarial stress tests in test_m4_adversarial.py passed) | handoff.md |
+| auditor_m4_1 | teamwork_preview_auditor | INTEGRITY VIOLATION (Facade Application, mock import in production, dead polling) | handoff.md |
+
+Gate Result: **FAIL (INTEGRITY VIOLATION)** (auditor_m4_1, reviewer_m4_1, and reviewer_m4_2 identified: (1) `BotApplication` subclasses PTB `Application` without calling `super().__init__` and registers 0 PTB handlers; (2) `src/bot.py:68` imports `MockTelegramBot` from `tests.mock_services` in production code; (3) Live update polling in `src/main.py` is bypassed because `updater` is missing; (4) Snooze warning 3 strips reply markup).

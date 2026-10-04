@@ -81,3 +81,69 @@ Integrity mode: development
 
 ### Verification
 - [ ] Automated tests run via `pytest` and pass 100% without requiring external network access or real API tokens.
+
+
+## 2026-10-04T03:32:03Z
+
+Resume implementation of the Telegram Personal Accountability Coach at Milestone 3, building upon fully completed and tested Milestone 1 (Config, Storage, Atomic JSON) and Milestone 2 (Gemini AI Coach). Strictly do NOT re-run or modify completed M1 and M2 components.
+
+Working directory: c:/Users/khoi1/Documents/antigravity/serene-bohr
+Integrity mode: development
+
+## Current Baseline Status
+- **Milestone 1 (DONE)**: `src/config.py`, `src/storage.py`, `config.yaml`, `.env.example`, 181 unit & adversarial tests passing.
+- **Milestone 2 (DONE)**: `src/coach.py` (Gemini 2.5 Flash, sliding context, excuse evaluator, offline fallbacks), 153 tests passing.
+- **E2E Test Suites (READY)**: `tests/test_e2e_tier1_features.py` through `tier4_scenarios.py` ready for validation.
+
+## Remaining Requirements to Implement
+
+### R1. Milestone 3: Proactive Scheduler Service (`src/scheduler.py`)
+- Implement `SchedulerService` using APScheduler `AsyncIOScheduler` strictly configured for `Asia/Ho_Chi_Minh` timezone.
+- Attach recurring cron triggers driven by `config.yaml`:
+  1. **Gym Split 1**: Mon, Tue, Thu at 17:15.
+  2. **Gym Split 2**: Wed, Sat at 16:15.
+  3. **TOEIC Study**: Daily at 19:25 (with dynamic 7-day part rotation via `config.toeic.get_part_for_weekday()`).
+  4. **Major Subject Study**: Daily at 20:40.
+- Implement dynamic 15-minute DateTrigger snooze jobs with ID format `snooze_{session_id}_{snooze_count}` and callback invocation.
+- Implement `cancel_job()`, `trigger_job()` (for test harness), `start()`, and `shutdown()`.
+- Add unit tests in `tests/test_scheduler.py` and pass Group 2 scheduler tests in `tests/test_e2e_tier1_features.py`.
+- Refer to detailed specification and blueprint in `.agents/teamwork/explorer_m3_1/analysis.md`.
+
+### R2. Milestone 4: Telegram Bot Core & Interactive Inline Actions (`src/bot.py`, `src/main.py`)
+- Implement `build_application(config, storage, coach, scheduler)` using `python-telegram-bot` (v20+ async).
+- Enforce strict security whitelist: incoming messages or callback queries with `chat_id != ALLOWED_CHAT_ID` are immediately rejected without calling Gemini.
+- Command handlers: `/start`, `/help`, `/status` (reporting streak, best streak, and total completions).
+- Inline keyboards with buttons:
+  - `[✅ Đã hoàn thành]`: Increments streak, updates `data/records.json`, queries coach for congratulation, edits message text.
+  - `[⏳ Xin lùi 15 phút]`: Increments snooze count, schedules 15-minute one-shot reminder job in scheduler, enforces max 2 snoozes with escalating warnings.
+  - `[🛑 Hôm nay nghỉ (Có lý do)]`: Sets user state to await justification text. Upon receipt, routes reason to `coach.evaluate_skip_reason()`. If excuse, enforces 2-minute micro-habit; if legitimate, marks session skipped.
+- Free-form coaching chat: Authorized user messages outside skip flow receive responses from `coach.chat()`.
+- Entrypoint `src/main.py`: Loads config, initializes storage, coach, scheduler, registers proactive triggers, builds application, and runs bot.
+
+### R3. Milestone 5: Containerization, Setup Scripts & Documentation
+- `Dockerfile` using `python:3.12-slim` or `python:3.11-slim`.
+- `docker-compose.yml` with persistent volume mount for `data/` and environment variables from `.env`.
+- Single-click startup scripts:
+  - `start.bat` for Windows (creates venv if needed, installs requirements, launches bot).
+  - `start.sh` for Linux/macOS (chmod +x, creates venv, installs requirements, launches bot).
+- `README.md` with low-code friendly instructions for non-dev users.
+
+### R4. Milestone 6: Final Integration & E2E Test Suite Validation
+- Execute all tests across unit, integration, and E2E tiers (`tests/test_config.py`, `tests/test_storage.py`, `tests/test_coach.py`, `tests/test_scheduler.py`, `tests/test_bot.py`, `tests/test_e2e_tier*.py`).
+- Ensure 100% pass rate with zero network access required.
+
+## Acceptance Criteria
+
+### Execution & Architecture
+- [ ] `src/scheduler.py`, `src/bot.py`, and `src/main.py` created and adhere to interface contracts in `PROJECT.md`.
+- [ ] `Dockerfile`, `docker-compose.yml`, `start.sh`, `start.bat`, and `README.md` created in root directory.
+- [ ] M1 and M2 code remain intact without regression.
+
+### Functionality & Persistence
+- [ ] Unauthorized Telegram updates rejected at security gate without calling Gemini.
+- [ ] Proactive scheduler registers all 4 scheduled jobs and dynamic snooze DateTrigger jobs.
+- [ ] Done, Snooze (up to 2 times), and Skip reason workflows execute correctly and update `data/records.json`.
+- [ ] `src/main.py` starts without import errors and boots bot lifecycle.
+
+### Verification
+- [ ] All unit, integration, and E2E tests pass 100% via `pytest`.
