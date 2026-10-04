@@ -1,0 +1,38 @@
+# =================================================================
+# Git Ignore Rules for Personal AI Accountability Coach
+# =================================================================
+
+# Environment Variables & Secrets (CRITICAL: Never push secrets!)
+.env
+*.env
+!.env.example
+
+# Python Virtual Environments & Packages
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local backup & temporary corrupted data files
+data/*.bak*
+data/*_corrupted_*
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
