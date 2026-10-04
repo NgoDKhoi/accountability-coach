@@ -340,7 +340,7 @@ class AICoachService:
             logger.warning("Error evaluating skip reason via Gemini: %s. Using offline classifier.", exc)
             return classify_skip_reason_offline(session_type, reason, self.fallbacks)
 
-    async def chat(self, user_message: str) -> str:
+    async def chat(self, user_message: str, schedule_context: Optional[str] = None) -> str:
         """Reactive two-way conversation with coach maintaining sliding history buffer."""
         msg = (user_message or "").strip()
         if not msg:
@@ -359,8 +359,15 @@ class AICoachService:
 
         contents = self._get_sanitized_history_contents()
 
+        system_instruction = self.system_prompt
+        if schedule_context:
+            system_instruction += (
+                f"\n\n[THÔNG TIN LỊCH TRÌNH HIỆN TẠI CỦA NGƯỜI DÙNG]:\n{schedule_context}\n"
+                "Nếu người dùng hỏi về lịch trình hôm nay hoặc các ca sắp tới, hãy dùng thông tin trên để giải đáp chính xác, ngắn gọn, súc tích (tối đa 2-3 câu)."
+            )
+
         gen_config = types.GenerateContentConfig(
-            system_instruction=self.system_prompt,
+            system_instruction=system_instruction,
             temperature=self.temperature,
             max_output_tokens=self.max_output_tokens,
             http_options=types.HttpOptions(timeout=15000),

@@ -22,11 +22,17 @@ Hệ thống trợ lý cá nhân ảo kỷ luật cao hoạt động qua **Teleg
 3. **Huấn luyện viên AI thực chiến (Gemini 2.5 Flash):**
    - Giọng điệu: Thẳng thắn, ngắn gọn (tối đa 2–3 câu), tư duy kỹ thuật/thực tế, hài hước châm biếm khi lười, công nhận đúng lúc.
    - Quản lý cửa sổ trượt ngữ cảnh hội thoại (6–10 tin nhắn gần nhất).
+   - Nắm rõ toàn bộ lịch trình hàng ngày và sự kiện để giải đáp trực tiếp khi bạn chat hỏi.
    - Có cơ chế Fallback ngoại tuyến tự động nếu mất kết nối mạng.
 
-4. **Bảo mật & Lưu trữ an toàn (Low-code Friendly):**
+4. **Tích hợp Google Calendar (iCal .ics) & Lệnh `/schedule`:**
+   - Hỗ trợ đọc tự động lịch trình cá nhân từ **Google Calendar Secret iCal URL** mà không cần cấu hình OAuth phức tạp.
+   - Lệnh `/schedule` (hoặc `/today`, `/lich`): Hiển thị chi tiết toàn bộ các mốc giờ kỷ luật cố định, sự kiện Google Calendar hôm nay và đếm ngược thời gian đến phiên tiếp theo.
+
+5. **Bảo mật & Lưu trữ an toàn (Low-code Friendly):**
    - **Strict Whitelist**: Chỉ phản hồi đúng `ALLOWED_CHAT_ID` để bảo vệ API key và lịch trình cá nhân.
    - **Atomic JSON Store**: Ghi dữ liệu vào `data/records.json` an toàn qua cơ chế ghi file tạm + replace nguyên tử (`os.replace`), chống hỏng file khi tắt máy đột ngột.
+   - **Hỗ trợ Cloud 24/7 Miễn phí**: Xem hướng dẫn tại [DEPLOYMENT_CLOUD_FREE.md](file:///c:/Users/khoi1/Documents/antigravity/serene-bohr/DEPLOYMENT_CLOUD_FREE.md).
 
 ---
 
@@ -114,6 +120,7 @@ python src/main.py
 serene-bohr/
 ├── .env.example              # Mẫu khai báo biến môi trường bí mật
 ├── config.yaml               # Lịch trình cron, lộ trình TOEIC, mẫu prompt của AI
+├── DEPLOYMENT_CLOUD_FREE.md  # Hướng dẫn chi tiết chạy bot 24/7 trên Cloud miễn phí
 ├── requirements.txt          # Danh sách thư viện Python
 ├── Dockerfile                # Cấu hình đóng gói container
 ├── docker-compose.yml        # Triển khai dịch vụ chạy ngầm với volume data/
@@ -128,6 +135,7 @@ serene-bohr/
 │   ├── config.py             # Trình nạp và kiểm tra tính hợp lệ cấu hình
 │   ├── storage.py            # Engine lưu trữ JSON atomic chống xung đột
 │   ├── coach.py              # Dịch vụ Gemini AI Coach & đánh giá lý do
+│   ├── calendar_service.py   # Tích hợp đọc lịch Google Calendar qua Secret iCal URL
 │   ├── scheduler.py          # Bộ lập lịch hẹn giờ APScheduler (Asia/Ho_Chi_Minh)
 │   └── bot.py                # Xử lý cập nhật Telegram & nút bấm Inline
 └── tests/                    # Bộ kiểm thử tự động toàn diện (Unit, E2E, Adversarial)

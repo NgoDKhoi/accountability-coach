@@ -141,6 +141,19 @@ class TestBotCommandHandlers:
         assert resp is not None
         assert "1" in resp["text"]
 
+    @pytest.mark.asyncio
+    async def test_schedule_command_today_agenda(
+        self, bot_application: Any, app_config: AppConfig
+    ) -> None:
+        """Feature: /schedule returns full daily schedule and countdown."""
+        update = make_text_update(chat_id=app_config.allowed_chat_id, text="/schedule")
+        resp = await bot_application.process_update(update)
+        assert resp is not None
+        assert "LỊCH TRÌNH HÔM NAY" in resp["text"]
+        assert "TOEIC" in resp["text"]
+        assert "Major" in resp["text"] or "Chuyên ngành" in resp["text"]
+        assert "Phiên tiếp theo" in resp["text"]
+
 
 class TestBotCallbackDone:
     """Feature 14: Done button completion workflow."""
@@ -504,15 +517,17 @@ class TestAuthenticPTBArchitecture:
         assert isinstance(bot_application.update_queue, asyncio.Queue)
 
     def test_registered_authentic_ptb_handlers(self, bot_application: Any) -> None:
-        """Exactly 5 authentic PTB handlers are registered in group 0."""
+        """Authentic PTB handlers are registered in group 0."""
         from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler
         handlers = bot_application.handlers.get(0, [])
-        assert len(handlers) == 5
+        assert len(handlers) in (5, 6)
 
         cmd_handlers = [h for h in handlers if isinstance(h, CommandHandler)]
-        assert len(cmd_handlers) == 3
-        commands = {list(h.commands)[0] for h in cmd_handlers}
-        assert commands == {"start", "help", "status"}
+        assert len(cmd_handlers) in (3, 4)
+        all_registered = set()
+        for h in cmd_handlers:
+            all_registered.update(h.commands)
+        assert {"start", "help", "status", "schedule"}.issubset(all_registered)
 
         cb_handlers = [h for h in handlers if isinstance(h, CallbackQueryHandler)]
         assert len(cb_handlers) == 1

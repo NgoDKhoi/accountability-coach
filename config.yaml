@@ -82,3 +82,12 @@ ai_coach:
     offline_skip_excuse: "🛑 Lý do chưa thuyết phục! Hãy làm ngay micro-habit 2 phút: mở tài liệu hoặc hít đất 5 cái trước khi nghỉ!"
     offline_skip_legitimate: "🛑 Đã ghi nhận nghỉ có lý do chính đáng. Nghỉ ngơi phục hồi và ngày mai quay lại với 200% kỷ luật!"
     offline_error: "🤖 AI Coach tạm thời mất kết nối mạng, nhưng kỷ luật của bạn thì không được ngắt quãng. Bắt tay vào việc ngay đi!"
+
+# =================================================================
+# Google Calendar iCal Integration (Tùy chọn)
+# =================================================================
+google_calendar:
+  # Lấy tại Google Calendar -> Cài đặt -> Tích hợp lịch -> Địa chỉ bí mật ở định dạng iCal
+  # Có thể cấu hình tại đây hoặc thông qua biến GOOGLE_CALENDAR_ICAL_URL trong .env
+  ical_url: ""
+  cache_ttl_seconds: 300

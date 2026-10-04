@@ -184,6 +184,7 @@ class AppConfig:
     records_file: str = "data/records.json"
     micro_habit_duration_minutes: int = 2
     system_prompt: str = ""
+    google_calendar_ical_url: Optional[str] = None
 
     @property
     def telegram_bot_token(self) -> str:
@@ -472,7 +473,14 @@ def load_config(config_path: str = "config.yaml", env_path: Optional[str] = ".en
             if v:
                 fallbacks[k] = str(v).strip()
 
-    # 8. Instantiate and return AppConfig
+    # 8. Google Calendar iCal configuration (Optional)
+    google_calendar_ical_url = os.environ.get("GOOGLE_CALENDAR_ICAL_URL", "").strip() or None
+    if not google_calendar_ical_url and "google_calendar" in yaml_data:
+        gc_data = yaml_data.get("google_calendar")
+        if isinstance(gc_data, dict):
+            google_calendar_ical_url = gc_data.get("ical_url", None)
+
+    # 9. Instantiate and return AppConfig
     return AppConfig(
         bot_token=bot_token,
         gemini_api_key=gemini_api_key,
@@ -491,4 +499,5 @@ def load_config(config_path: str = "config.yaml", env_path: Optional[str] = ".en
         records_file=records_file,
         micro_habit_duration_minutes=micro_habit_duration,
         system_prompt=system_prompt,
+        google_calendar_ical_url=google_calendar_ical_url,
     )

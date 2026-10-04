@@ -74,6 +74,12 @@ class BotApplication(Application):
         self._custom_bot: Optional[Any] = None
         self._real_bot: Optional[Bot] = None
         self.active_session_awaiting_reason: Optional[Dict[str, str]] = None
+        self.calendar_service = kwargs.pop("calendar_service", None)
+        if self.calendar_service is None and config is not None:
+            from src.calendar_service import CalendarService
+            ical_url = getattr(config, "google_calendar_ical_url", None)
+            tz_str = getattr(config, "timezone", "Asia/Ho_Chi_Minh")
+            self.calendar_service = CalendarService(ical_url=ical_url, timezone=ZoneInfo(tz_str))
 
         if "update_queue" not in kwargs and not args:
             # Direct instantiation fallback: initialize real PTB structures
@@ -138,12 +144,13 @@ class BotApplication(Application):
             self._custom_bot = value
 
     def _register_handlers(self) -> None:
-        """Registers the 5 authentic PTB handlers idempotently."""
+        """Registers authentic PTB handlers idempotently."""
         if self.handlers.get(0):
             return
         self.add_handler(CommandHandler("start", self._cmd_start))
         self.add_handler(CommandHandler("help", self._cmd_help))
         self.add_handler(CommandHandler("status", self._cmd_status))
+        self.add_handler(CommandHandler(["schedule", "today", "lich"], self._cmd_schedule))
         self.add_handler(CallbackQueryHandler(self._handle_callback))
         self.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_text_message))
 
@@ -301,6 +308,25 @@ class BotApplication(Application):
             return await self._handle_status(msg)
         else:
             return await self._handle_status(update_or_msg)
+
+    async def _cmd_schedule(self, update_or_msg: Any, context: Optional[Any] = None) -> Any:
+        """PTB CommandHandler callback for /schedule (and /today, /lich)."""
+        if context is not None or hasattr(update_or_msg, "effective_chat"):
+            update = update_or_msg
+            if not self._is_authorized_chat(update.effective_chat):
+                logger.warning("Unauthorized access attempt rejected from chat_id=%s", getattr(update.effective_chat, "id", None))
+                if update.effective_chat:
+                    await self.bot.send_message(
+                        update.effective_chat.id,
+                        "⛔ Truy cập bị từ chối! Bot chỉ phục vụ người dùng được ủy quyền.",
+                    )
+                return None
+            msg = update.message
+            if not msg:
+                return None
+            return await self._handle_schedule(msg)
+        else:
+            return await self._handle_schedule(update_or_msg)
 
     async def _handle_callback(self, query_or_update: Any, context: Optional[Any] = None) -> Any:
         """Handles interactive callback actions: done, snooze, skip."""
@@ -474,6 +500,8 @@ class BotApplication(Application):
                 return await self._handle_help(message)
             elif text.startswith("/status"):
                 return await self._handle_status(message)
+            elif text.startswith("/schedule") or text.startswith("/today") or text.startswith("/lich"):
+                return await self._handle_schedule(message)
             else:
                 return await self._handle_text(message)
 
@@ -486,6 +514,7 @@ class BotApplication(Application):
             "Tôi là bot giám sát tiến độ thực chiến dành cho kỹ sư IT & game dev.\n"
             "Các lệnh khả dụng:\n"
             "• `/status` - Xem chuỗi streak và lịch sử check-in\n"
+            "• `/schedule` - Xem chi tiết lịch trình hôm nay & Google Calendar\n"
             "• `/help` - Xem hướng dẫn chi tiết\n"
         )
         return await self._safe_send_message(message.chat.id, text)
@@ -494,6 +523,11 @@ class BotApplication(Application):
         """Feature 5: /help command handler detailing the 3 interactive action buttons."""
         text = (
             "📖 *HƯỚNG DẪN SỬ DỤNG:*\n\n"
+            "Các lệnh điều khiển:\n"
+            "• `/status` - Xem chuỗi streak và lịch sử check-in\n"
+            "• `/schedule` (hoặc `/today`) - Xem chi tiết lịch trình hôm nay & Google Calendar\n"
+            "• `/help` - Xem hướng dẫn này\n\n"
+            "Cơ chế tương tác khi nhận thông báo:\n"
             "1. Bot sẽ chủ động gửi thông báo theo lịch đã cài đặt.\n"
             "2. Khi nhận thông báo, chọn 1 trong 3 nút:\n"
             "   - `[✅ Đã hoàn thành]`: Ghi nhận hoàn thành và tăng streak.\n"
@@ -514,6 +548,146 @@ class BotApplication(Application):
             f"🏆 Kỷ lục streak tốt nhất: *{streak_data.best_streak}* ngày\n"
             f"✅ Tổng số phiên hoàn thành: *{streak_data.total_completions}*\n"
             f"📅 Lần cuối hoàn thành: `{streak_data.last_completed_date or 'Chưa có'}`"
+        )
+        return await self._safe_send_message(message.chat.id, text)
+
+    def _get_next_session_info(self, now: datetime) -> str:
+        """Calculates upcoming session today and remaining countdown."""
+        weekday = now.weekday()
+        current_mins = now.hour * 60 + now.minute
+
+        gym_mins: Optional[int] = None
+        gym_window = "17:30 – 18:30"
+        if weekday in (0, 1, 3):
+            gym_cfg = getattr(self.config, "gym", None)
+            h = getattr(gym_cfg, "hour_split1", 17)
+            m = getattr(gym_cfg, "minute_split1", 15)
+            gym_mins = h * 60 + m
+            gym_window = getattr(gym_cfg, "window_split1", "17:30 – 18:30")
+        elif weekday in (2, 5):
+            gym_cfg = getattr(self.config, "gym", None)
+            h = getattr(gym_cfg, "hour_split2", 16)
+            m = getattr(gym_cfg, "minute_split2", 15)
+            gym_mins = h * 60 + m
+            gym_window = getattr(gym_cfg, "window_split2", "16:30 – 17:30")
+
+        toeic_cfg = getattr(self.config, "toeic", None)
+        t_h = getattr(toeic_cfg, "hour", 19) if toeic_cfg else 19
+        t_m = getattr(toeic_cfg, "minute", 25) if toeic_cfg else 25
+        toeic_mins = t_h * 60 + t_m
+        t_part = toeic_cfg.get_part_for_weekday(weekday) if toeic_cfg and hasattr(toeic_cfg, "get_part_for_weekday") else "TOEIC"
+
+        major_cfg = getattr(self.config, "major", None)
+        m_h = getattr(major_cfg, "hour", 20) if major_cfg else 20
+        m_m = getattr(major_cfg, "minute", 40) if major_cfg else 40
+        major_mins = m_h * 60 + m_m
+        major_name = getattr(major_cfg, "name", "Chuyên ngành & Game Dev") if major_cfg else "Chuyên ngành & Game Dev"
+
+        candidates = []
+        if gym_mins is not None and current_mins < gym_mins:
+            candidates.append((gym_mins, f"🏋️‍♂️ *Gym Session* (Khung tập: `{gym_window}`)"))
+        if current_mins < toeic_mins:
+            candidates.append((toeic_mins, f"📚 *TOEIC* - {t_part} (19:30 – 20:30)"))
+        if current_mins < major_mins:
+            candidates.append((major_mins, f"💻 *{major_name}* (20:45 – 21:45)"))
+
+        if not candidates:
+            return "🎉 Đã hoàn thành/vượt qua tất cả mốc nhắc nhở của hôm nay! Nghỉ ngơi sớm để mai tiếp tục."
+
+        next_mins, label = candidates[0]
+        diff = next_mins - current_mins
+        hrs = diff // 60
+        mins = diff % 60
+        time_str = f"{hrs} tiếng {mins} phút" if hrs > 0 else f"{mins} phút"
+        return f"{label}\n⏳ Còn khoảng *{time_str}* nữa đến giờ nhắc."
+
+    async def _build_schedule_context_brief(self) -> str:
+        """Constructs concise schedule overview for AI Coach reasoning context."""
+        tz_str = getattr(self.config, "timezone", "Asia/Ho_Chi_Minh")
+        now = datetime.now(ZoneInfo(tz_str))
+        weekday = now.weekday()
+        weekday_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+
+        lines = [f"Hôm nay là {weekday_names[weekday]}, {now.strftime('%d/%m/%Y')}."]
+        if weekday in (0, 1, 3):
+            lines.append("- Gym: 17:30 - 18:30 (nhắc lúc 17:15)")
+        elif weekday in (2, 5):
+            lines.append("- Gym: 16:30 - 17:30 (nhắc lúc 16:15)")
+        else:
+            lines.append("- Gym: Nghỉ tập (Rest day)")
+
+        toeic_cfg = getattr(self.config, "toeic", None)
+        t_part = toeic_cfg.get_part_for_weekday(weekday) if toeic_cfg and hasattr(toeic_cfg, "get_part_for_weekday") else "TOEIC"
+        lines.append(f"- TOEIC: 19:30 - 20:30 ({t_part}, nhắc lúc 19:25)")
+        lines.append("- Chuyên ngành & Game Dev: 20:45 - 21:45 (nhắc lúc 20:40)")
+
+        if self.calendar_service and self.calendar_service.is_configured:
+            try:
+                gcal = await self.calendar_service.get_today_events(now)
+                if gcal:
+                    gcal_strs = [f"{e.format_time_range()}: {e.summary}" for e in gcal]
+                    lines.append(f"- Google Calendar: {', '.join(gcal_strs)}")
+            except Exception:
+                pass
+
+        return "\n".join(lines)
+
+    async def _handle_schedule(self, message: Any) -> Dict[str, Any]:
+        """Feature: /schedule command handler displaying full daily agenda & next session."""
+        tz_str = getattr(self.config, "timezone", "Asia/Ho_Chi_Minh")
+        now = datetime.now(ZoneInfo(tz_str))
+        weekday = now.weekday()
+        weekday_names = ["Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy", "Chủ Nhật"]
+
+        schedule_lines = []
+        gym_cfg = getattr(self.config, "gym", None)
+        if weekday in (0, 1, 3):
+            g_window = getattr(gym_cfg, "window_split1", "17:30 – 18:30")
+            g_time = getattr(gym_cfg, "time_split1", "17:15")
+            schedule_lines.append(f"🏋️‍♂️ `{g_window}`: *Gym Session* (Nhắc lúc {g_time})")
+        elif weekday in (2, 5):
+            g_window = getattr(gym_cfg, "window_split2", "16:30 – 17:30")
+            g_time = getattr(gym_cfg, "time_split2", "16:15")
+            schedule_lines.append(f"🏋️‍♂️ `{g_window}`: *Gym Session* (Nhắc lúc {g_time})")
+        else:
+            schedule_lines.append("🏋️‍♂️ *Gym:* _Hôm nay nghỉ hồi phục cơ bắp (Rest day)_")
+
+        toeic_cfg = getattr(self.config, "toeic", None)
+        t_window = getattr(toeic_cfg, "window", "19:30 – 20:30") if toeic_cfg else "19:30 – 20:30"
+        t_time = getattr(toeic_cfg, "time", "19:25") if toeic_cfg else "19:25"
+        t_topic = toeic_cfg.get_part_for_weekday(weekday) if toeic_cfg and hasattr(toeic_cfg, "get_part_for_weekday") else "Part review"
+        schedule_lines.append(f"📚 `{t_window}`: *TOEIC* - {t_topic} (Nhắc lúc {t_time})")
+
+        major_cfg = getattr(self.config, "major", None)
+        m_window = getattr(major_cfg, "window", "20:45 – 21:45") if major_cfg else "20:45 – 21:45"
+        m_time = getattr(major_cfg, "time", "20:40") if major_cfg else "20:40"
+        m_name = getattr(major_cfg, "name", "Major Subject Study & Game Dev") if major_cfg else "Major Subject Study & Game Dev"
+        schedule_lines.append(f"💻 `{m_window}`: *{m_name}* (Nhắc lúc {m_time})")
+
+        gcal_lines = []
+        if self.calendar_service and self.calendar_service.is_configured:
+            try:
+                gcal_events = await self.calendar_service.get_today_events(now)
+                if gcal_events:
+                    for ge in gcal_events:
+                        gcal_lines.append(f"• `{ge.format_time_range()}`: *{ge.summary}*")
+                else:
+                    gcal_lines.append("_Không có sự kiện nào từ Google Calendar hôm nay._")
+            except Exception as exc:
+                logger.warning("Error fetching gcal events in _handle_schedule: %s", exc)
+                gcal_lines.append("_Không thể lấy sự kiện Google Calendar lúc này._")
+        else:
+            gcal_lines.append("_(Chưa cấu hình GOOGLE_CALENDAR_ICAL_URL trong .env)_")
+
+        next_session_info = self._get_next_session_info(now)
+
+        text = (
+            f"📅 *LỊCH TRÌNH HÔM NAY* ({weekday_names[weekday]}, {now.strftime('%d/%m/%Y')})\n\n"
+            f"🎯 *Mục tiêu kỷ luật cố định:*\n"
+            + "\n".join(schedule_lines) + "\n\n"
+            f"🗓️ *Sự kiện Google Calendar:*\n"
+            + "\n".join(gcal_lines) + "\n\n"
+            f"⏳ *Phiên tiếp theo*:\n{next_session_info}"
         )
         return await self._safe_send_message(message.chat.id, text)
 
@@ -558,7 +732,8 @@ class BotApplication(Application):
             return await self._safe_send_message(message.chat.id, reply)
 
         # Reactive free-form coaching chat
-        coach_reply = await self.coach.chat(message.text)
+        schedule_ctx = await self._build_schedule_context_brief()
+        coach_reply = await self.coach.chat(message.text, schedule_context=schedule_ctx)
         return await self._safe_send_message(message.chat.id, f"🤖 *Coach*: {coach_reply}")
 
     async def _snooze_job_callback(self, session_id: str, session_type: str, snooze_count: int) -> None:
@@ -661,6 +836,7 @@ def build_application(
     storage: Any,
     coach: Any,
     scheduler: Any,
+    calendar_service: Optional[Any] = None,
 ) -> BotApplication:
     """Builds genuine PTB BotApplication registering all handlers and attaching services."""
     token = getattr(config, "bot_token", None)
@@ -681,6 +857,12 @@ def build_application(
     app.storage = storage
     app.coach = coach
     app.scheduler = scheduler
+    app.calendar_service = calendar_service
+    if app.calendar_service is None and config is not None:
+        from src.calendar_service import CalendarService
+        ical_url = getattr(config, "google_calendar_ical_url", None)
+        tz_str = getattr(config, "timezone", "Asia/Ho_Chi_Minh")
+        app.calendar_service = CalendarService(ical_url=ical_url, timezone=ZoneInfo(tz_str))
 
     app._register_handlers()
     return app
