@@ -157,7 +157,13 @@ async def run_async(
             except Exception as exc:
                 logger.warning("Could not start updater polling (offline/mock environment): %s", exc)
 
-        logger.info("Bot application active. Listening for updates...")
+        if bot_app.updater and getattr(bot_app.updater, "running", False):
+            logger.info("Bot application active. Listening for updates from Telegram...")
+        elif bot is None:
+            logger.warning(
+                "Bot application dang chay o che do offline (chua ket noi duoc toi api.telegram.org).\n"
+                "-> Neu ban o Viet Nam, hay bat Cloudflare WARP (1.1.1.1) hoac VPN tren may de ket noi toi Telegram!"
+            )
         if stop_event is None:
             stop_event = asyncio.Event()
 

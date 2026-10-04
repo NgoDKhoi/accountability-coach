@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 import logging
+import os
 from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
@@ -666,7 +667,14 @@ def build_application(
     if not token or ":" not in str(token) or not str(token).split(":")[0].isdigit():
         token = "1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ123456789"
 
-    builder = Application.builder().token(token).application_class(BotApplication)
+    proxy_url = os.getenv("TELEGRAM_PROXY_URL") or os.getenv("HTTPS_PROXY")
+    request_kwargs: Dict[str, Any] = {"connect_timeout": 20.0, "read_timeout": 20.0}
+    if proxy_url:
+        request_kwargs["proxy_url"] = proxy_url
+
+    from telegram.request import HTTPXRequest
+    request = HTTPXRequest(**request_kwargs)
+    builder = Application.builder().token(token).request(request).application_class(BotApplication)
     app: BotApplication = builder.build()
 
     app.config = config
