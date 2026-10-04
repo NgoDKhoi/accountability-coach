@@ -49,8 +49,8 @@ call .venv\Scripts\activate.bat
 
 :: 5. Install or update dependencies
 echo [INFO] Checking dependencies in requirements.txt...
-pip install -q --upgrade pip
-pip install -q -r requirements.txt
+python -m pip install -q --upgrade pip
+python -m pip install -q -r requirements.txt
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install dependencies!
     pause
