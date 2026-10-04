@@ -20,6 +20,14 @@ from apscheduler.triggers.date import DateTrigger
 logger = logging.getLogger(__name__)
 
 
+class TimezoneAwareDateTrigger(DateTrigger):
+    """DateTrigger retaining explicit timezone reference for testing and introspection."""
+
+    def __init__(self, run_date: Any = None, timezone: Any = None) -> None:
+        super().__init__(run_date=run_date, timezone=timezone)
+        self.timezone = timezone
+
+
 def _parse_time_str(time_str: str) -> tuple[int, int]:
     """Helper to parse 'HH:MM' time string into (hour, minute) integers."""
     parts = time_str.strip().split(":")
@@ -223,6 +231,8 @@ class SchedulerService:
                 )
 
         try:
+            if self.scheduler.get_job(job_id) is not None:
+                self.scheduler.remove_job(job_id)
             self.scheduler.add_job(
                 _job_wrapper,
                 trigger=trigger,
@@ -257,7 +267,7 @@ class SchedulerService:
             "callback": callback,
         }
 
-        trigger = DateTrigger(run_date=run_at, timezone=self.timezone)
+        trigger = TimezoneAwareDateTrigger(run_date=run_at, timezone=self.timezone)
 
         async def _snooze_wrapper() -> None:
             if job_id not in self.snooze_jobs:
@@ -272,6 +282,8 @@ class SchedulerService:
                 self.snooze_jobs.pop(job_id, None)
 
         try:
+            if self.scheduler.get_job(job_id) is not None:
+                self.scheduler.remove_job(job_id)
             self.scheduler.add_job(
                 _snooze_wrapper,
                 trigger=trigger,

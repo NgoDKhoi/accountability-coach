@@ -64,6 +64,7 @@ if not exist "data" mkdir data
 echo [INFO] Starting Personal AI Accountability Coach...
 echo Press Ctrl+C to stop the bot.
 echo.
+set PYTHONPATH=%~dp0;%PYTHONPATH%
 python src\main.py
 
 pause

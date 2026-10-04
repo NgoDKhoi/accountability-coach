@@ -10,10 +10,17 @@ import asyncio
 from datetime import datetime
 import logging
 import os
+from pathlib import Path
 import signal
 import sys
 from typing import Any, Optional, Tuple
 from zoneinfo import ZoneInfo
+
+# Ensure project root directory is on sys.path so 'src.*' imports succeed
+# regardless of whether executed as `python src/main.py`, `python -m src.main`, or from external directories.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from src.config import AppConfig, load_config
 from src.storage import AtomicJsonStore

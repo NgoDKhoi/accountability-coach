@@ -54,4 +54,5 @@ mkdir -p data
 echo "[INFO] Starting Personal AI Accountability Coach..."
 echo "Press Ctrl+C to stop the bot."
 echo ""
+export PYTHONPATH="$SCRIPT_DIR:${PYTHONPATH:-}"
 exec python src/main.py
